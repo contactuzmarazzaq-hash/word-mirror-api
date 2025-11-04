@@ -1,0 +1,94 @@
+trigger:
+  branches:
+    include:
+      - master
+
+variables:
+  # ACR info
+  ACR_NAME: 'mirroracr51258.azurecr.io'
+  IMAGE_NAME: 'word-mirror-api'
+  IMAGE_TAG: '$(Build.BuildId)'
+  K8S_NAMESPACE: 'default'
+  K8S_DEPLOYMENT_NAME: 'mirror-app'
+  # ACR credentials (set as secret in Azure DevOps Variables)
+  # ACR_USERNAME: mirroracr51258
+  # ACR_PASSWORD: <your-secret-password>
+
+stages:
+  - stage: Test
+    displayName: "Run Application Tests"
+    jobs:
+      - job: RunTests
+        displayName: "Run Node.js Tests"
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '18.x'
+            displayName: 'Use Node.js 18'
+          
+          - script: |
+              npm install
+              npm test
+            displayName: 'Install Dependencies & Run Tests'
+
+  - stage: Build
+    displayName: "Build Docker Image"
+    dependsOn: Test
+    condition: succeeded('Test')
+    jobs:
+      - job: DockerBuild
+        displayName: "Build & Push Docker Image"
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: Docker@2
+            displayName: 'Login to ACR'
+            inputs:
+              command: login
+              loginServer: '$(ACR_NAME)'
+              username: '$(ACR_USERNAME)'
+              password: '$(ACR_PASSWORD)'
+
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              command: build
+              Dockerfile: 'Dockerfile'
+              tags: |
+                $(ACR_NAME)/$(IMAGE_NAME):$(IMAGE_TAG)
+          
+          - task: Docker@2
+            displayName: 'Push Docker Image'
+            inputs:
+              command: push
+              tags: |
+                $(ACR_NAME)/$(IMAGE_NAME):$(IMAGE_TAG)
+
+  - stage: Deploy
+    displayName: "Deploy to AKS"
+    dependsOn: Build
+    condition: succeeded('Build')
+    jobs:
+      - job: DeployToK8s
+        displayName: "Deploy Application to AKS"
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          # Install kubectl
+          - task: Kubernetes@1
+            displayName: 'Set AKS Context'
+            inputs:
+              connectionType: 'Azure Resource Manager'
+              azureSubscription: 'AzureRM-Mirror' # Replace with your Azure RM service connection
+              azureResourceGroup: 'mirror-rg'
+              kubernetesCluster: 'mirror-aks'
+              command: 'getNodes'
+
+          # Apply Kubernetes manifests
+          - script: |
+              kubectl set image deployment/$(K8S_DEPLOYMENT_NAME) $(K8S_DEPLOYMENT_NAME)=$(ACR_NAME)/$(IMAGE_NAME):$(IMAGE_TAG) -n $(K8S_NAMESPACE)
+              kubectl apply -f kubernetes/deployment.yaml -n $(K8S_NAMESPACE)
+              kubectl apply -f kubernetes/ingress.yml -n $(K8S_NAMESPACE)
+            displayName: 'Deploy Manifests'

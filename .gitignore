@@ -1,0 +1,20 @@
+# Node.js
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+terraform.tfstate.*.backup
+/terraform/terraform.tfstate.1762198490.backup
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+.terraform/
+*.terraform.lock.hcl
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,69 @@
+# 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mirror-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mirror
+  template:
+    metadata:
+      labels:
+        app: mirror
+    spec:
+      containers:
+        - name: mirror
+          image: mirroracr51258.azurecr.io/mirror:latest
+          ports:
+            - containerPort: 4004
+          env:
+            - name: PGHOST
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: PGHOST
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: PGUSER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: PGPASSWORD
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: PGDATABASE
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: PGPORT
+            - name: PGSSLMODE
+              valueFrom:
+                secretKeyRef:
+                  name: pg-secret
+                  key: PGSSLMODE
+            - name: PORT
+              value: "4004"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirror-service
+spec:
+  type: LoadBalancer  # <- was ClusterIP
+  selector:
+    app: mirror
+  ports:
+    - protocol: TCP
+      port: 80        # External port
+      targetPort: 4004  # Container port
+
