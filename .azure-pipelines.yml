@@ -48,13 +48,9 @@ stages:
           demands:
           - Agent.OS -equals Darwin
         steps:
-          - task: Docker@2
+          - script: |
+              echo $(ACR_PASSWORD) | docker login $(ACR_NAME) -u $(ACR_USERNAME) --password-stdin
             displayName: 'Login to ACR'
-            inputs:
-              command: login
-              loginServer: '$(ACR_NAME)'
-              username: '$(ACR_USERNAME)'
-              password: '$(ACR_PASSWORD)'
 
           - task: Docker@2
             displayName: 'Build Docker Image'
