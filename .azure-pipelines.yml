@@ -84,7 +84,7 @@ stages:
             displayName: 'Set AKS Context'
             inputs:
               connectionType: 'Azure Resource Manager'
-              azureSubscription: 'AzureRM-Mirror' # Replace with your Azure RM service connection
+              azureSubscriptionEndpoint: 'AzureRM-Mirror' # Replace with your Azure RM service connection
               azureResourceGroup: 'mirror-rg'
               kubernetesCluster: 'mirror-aks'
               command: 'getNodes'
