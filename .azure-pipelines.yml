@@ -79,15 +79,16 @@ stages:
           demands:
           - Agent.OS -equals Darwin
         steps:
-          # Install kubectl
-          - task: Kubernetes@1
+          # Set AKS context via Azure CLI and verify connectivity
+          - task: AzureCLI@2
             displayName: 'Set AKS Context'
             inputs:
-              connectionType: 'Azure Resource Manager'
-              azureSubscriptionEndpoint: 'AzureRM-Mirror' # Replace with your Azure RM service connection
-              azureResourceGroup: 'mirror-rg'
-              kubernetesCluster: 'mirror-aks'
-              command: 'getNodes'
+              azureSubscription: 'AzureRM-Mirror'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az aks get-credentials -g mirror-rg -n mirror-aks --overwrite-existing
+                kubectl get nodes -o wide
 
           # Apply Kubernetes manifests
           - script: |
