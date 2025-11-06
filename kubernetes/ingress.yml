@@ -14,4 +14,4 @@ spec:
               service:
                 name: mirror-service
                 port:
-                  number: 4004
+                  number: 80
