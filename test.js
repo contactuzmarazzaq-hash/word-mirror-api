@@ -1,4 +1,4 @@
-import assert from "assert";
+const assert = require("assert");
 
 function mirrorWord(word) {
   return word
